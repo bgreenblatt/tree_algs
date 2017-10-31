@@ -86,10 +86,7 @@ void visit_nodes_post(struct node *root) {
 	while (st != NULL) {
 		vnode = peek(st);
 		tnode = vnode->val;
-		if (1 == tnode->visited) {
-			pop(&st);
-			printf("%d\n", tnode->val);
-		} else {
+		if (0 == tnode->visited) {
 			vnode = peek(st);
 			tnode = vnode->val;
 			if (tnode->right != NULL) {
@@ -99,6 +96,9 @@ void visit_nodes_post(struct node *root) {
 				push(&st, tnode->left);
 			}
 			tnode->visited = 1;
+		} else {
+			pop(&st);
+			printf("%d\n", tnode->val);
 		}
 	}
 }
