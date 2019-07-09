@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 struct node {
 	int val;
@@ -20,16 +21,13 @@ int insert_tree(struct node **root, int val) {
 	struct node *traverser = NULL;
 	struct node *parent = NULL;
 
-	temp = malloc(sizeof(struct node));
+	temp = calloc(1, sizeof(struct node));
 	if (temp == NULL) {
 		printf("malloc failed\n");
 		return -1;
 	}
 	printf("inserting %d\n", val);
 	temp->val = val;
-	temp->visited = 0;
-	temp->left = NULL;
-	temp->right = NULL;
 	if (*root == NULL) {
 		*root = temp;
 		return 0;
@@ -86,7 +84,10 @@ void visit_nodes_post(struct node *root) {
 	while (st != NULL) {
 		vnode = peek(st);
 		tnode = vnode->val;
-		if (0 == tnode->visited) {
+		if (1 == tnode->visited) {
+			pop(&st);
+			printf("%d\n", tnode->val);
+		} else {
 			vnode = peek(st);
 			tnode = vnode->val;
 			if (tnode->right != NULL) {
@@ -96,9 +97,6 @@ void visit_nodes_post(struct node *root) {
 				push(&st, tnode->left);
 			}
 			tnode->visited = 1;
-		} else {
-			pop(&st);
-			printf("%d\n", tnode->val);
 		}
 	}
 }
@@ -151,9 +149,8 @@ void visit_nodes(struct node *root) {
 	struct stack_node *vnode = NULL;
 	struct node *pnode = root;
 	struct node *tnode = NULL;
-	int done = 0;
 
-	while (!done) {
+	while (true) {
 		if (pnode) {
 			push(&st, pnode);
 			pnode = pnode->left;
@@ -165,7 +162,7 @@ void visit_nodes(struct node *root) {
 			        printf("%d\n", tnode->val);
 				free(vnode);
 			} else {
-				done = 1;
+				break;
 			}
 		}
 	}
