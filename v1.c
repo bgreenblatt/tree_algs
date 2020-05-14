@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 struct node {
 	int val;
@@ -15,6 +16,131 @@ struct stack_node {
 };
 
 int should_print = 0;
+
+void append_str_special(char **str, int *len) {
+	// realloc str if not long enough, append val and “,”
+	char *tmp;
+	int _len = *len;
+	char val_str[20];
+
+	sprintf(val_str, "x, ");
+	int val_len = strlen(val_str);
+	if (_len == 0) {
+		*str = calloc(val_len + 10, 1);
+		if (*str == NULL) {
+			printf("calloc of size %d failed\n", val_len + 10);
+		}
+		*len = val_len + 10;
+		sprintf(*str, "x, ");
+		return;
+	} else if (strlen(*str) > _len - 3) {
+		tmp = realloc(*str, _len + val_len + 10);
+		if (tmp == NULL) {
+			printf("realloc of size %d failed, str is %s\n", _len + val_len + 10, *str);
+		}
+		*len += val_len + 10;
+		*str = tmp;
+	}
+	strcat(*str, val_str);
+}
+
+void append_str(char **str, int *len, int val) {
+	// realloc str if not long enough, append val and “,”
+	char *tmp;
+	int _len = *len;
+	char val_str[20];
+
+	sprintf(val_str, "%d, ", val);
+	int val_len = strlen(val_str);
+	if (_len == 0) {
+		*str = calloc(val_len + 10, 1);
+		if (*str == NULL) {
+			printf("calloc of size %d failed\n", val_len + 10);
+		}
+		*len = val_len + 10;
+		sprintf(*str, "%d, ", val);
+		return;
+	} else if (strlen(*str) > _len - 3) {
+		tmp = realloc(*str, _len + val_len + 10);
+		if (tmp == NULL) {
+			printf("realloc of size %d failed, str is %s\n", _len + val_len + 10, *str);
+		}
+		*len += val_len + 10;
+		*str = tmp;
+	}
+	strcat(*str, val_str);
+}
+
+char *
+serialize(struct node *root) {
+    static char *tree_str = NULL;
+    static int str_length = 0;
+    append_str(&tree_str, &str_length, root->val);
+    if (root->left != NULL) {
+        serialize(root->left);
+    } else {
+        append_str_special(&tree_str, &str_length);
+    }
+    if (root->right != NULL) {
+        serialize(root->right);
+    } else {
+        append_str_special(&tree_str, &str_length);
+    }
+    return tree_str;
+}
+
+char *
+next_token(char **token_string) {
+	char *t, *ret;
+
+	t = strstr(*token_string, ",");
+	if (t == NULL) {
+		return t;
+	}
+	*t = '\0';
+	ret = *token_string;
+	*token_string = t + 1;
+	return ret;
+}
+
+void
+_deserialize(char **tree_string, struct node *root) {
+	char *token;
+
+	token = next_token(tree_string);
+	if ((token) != NULL && (strcmp(token, " x") != 0)) {
+		root->val = atoi(token);
+		root->left = calloc(1, sizeof(struct node));
+		_deserialize(tree_string, root->left);
+		root->right = calloc(1, sizeof(struct node));
+		_deserialize(tree_string, root->right);
+	} else {
+		root->visited = -1;
+	}
+}
+
+void remove_unvisited(struct node *temp) {
+   if (temp != NULL) {
+      if (temp->left != NULL && temp->left->visited == -1) {
+	free(temp->left);
+	temp->left = NULL;
+      } else {
+      	remove_unvisited(temp->left);
+      }
+      if (temp->right != NULL && temp->right->visited == -1) {
+	free(temp->right);
+	temp->right = NULL;
+      } else {
+      	remove_unvisited(temp->right);
+      }
+   }
+}
+
+void
+deserialize(char **tree_string, struct node *root) {
+	_deserialize(tree_string, root);
+	remove_unvisited(root);
+}
 
 int insert_tree(struct node **root, int val) {
 	struct node *temp = NULL;
@@ -268,6 +394,8 @@ int main(int argc, char* argv[]) {
 	struct stack_node *st_out = NULL;
 	struct node *t_out = NULL;
 	struct node *root = NULL;
+	struct node *root_copy = NULL;
+	char *tree_string;
 
 	printf("stack test\n");
 	should_print = 1;
@@ -330,7 +458,17 @@ int main(int argc, char* argv[]) {
 	}
 	should_print = 0;
 
+	insert_tree(&root, -9);
 	printf("bfs iterative start\n");
 	visit_nodes_bfs(root);
 	printf("bfs iterative end\n\n");
+
+	printf("serialized tree string: ");
+	tree_string = serialize(root);
+	printf("%s\n", tree_string);
+	root_copy = calloc(1, sizeof(struct node));
+	deserialize(&tree_string, root_copy);
+	printf("bfs tree copy iterative start\n");
+	visit_nodes_bfs(root_copy);
+	printf("bfs tree copy iterative end\n\n");
 }
